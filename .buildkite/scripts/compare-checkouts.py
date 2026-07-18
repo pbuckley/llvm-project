@@ -70,7 +70,7 @@ Git mirror volume.
 
 The stopwatch starts immediately before `git clone` and stops after `git
 checkout` materializes the selected commit. Queueing, agent startup, artifact
-download, and the benchmark job's own skipped default checkout are excluded.
+download, and the benchmark jobs' identical native checkouts are excluded.
 The mirror sample uses Git's `--reference-if-able`, the same object-borrowing
 mechanism used by Buildkite Git mirrors.
 

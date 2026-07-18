@@ -41,7 +41,4 @@ steps:
       fi
     agents:
       queue: "hosted-linux"
-    artifact_paths:
-      - ".buildkite/scripts/checkout-benchmark.sh"
-      - ".buildkite/scripts/compare-checkouts.py"
     timeout_in_minutes: 10

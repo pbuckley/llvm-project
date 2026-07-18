@@ -3,7 +3,8 @@ env:
   LLVM_DEMO_REPO_URL: "https://github.com/pbuckley/llvm-project.git"
 
 checkout:
-  skip: true
+  depth: 2
+  submodules: false
 
 steps:
   - group: ":git: Checkout performance lab — ${LLVM_DEMO_CHECKOUT_PROFILE}"
@@ -11,13 +12,9 @@ steps:
     steps:
       - label: ":globe_with_meridians: Uncached network clone"
         key: "checkout-network"
-        depends_on: "upload-repository-pipeline"
         command: |
-          mkdir -p .buildkite/scripts
-          buildkite-agent artifact download ".buildkite/scripts/checkout-benchmark.sh" . \
-            --step upload-repository-pipeline
-          chmod +x .buildkite/scripts/checkout-benchmark.sh
-          .buildkite/scripts/checkout-benchmark.sh network "$${LLVM_DEMO_CHECKOUT_PROFILE}"
+          bash .buildkite/scripts/checkout-benchmark.sh \
+            network "$${LLVM_DEMO_CHECKOUT_PROFILE}"
         agents:
           queue: "hosted-linux"
         artifact_paths:
@@ -26,13 +23,9 @@ steps:
 
       - label: ":zap: Buildkite Git mirror clone"
         key: "checkout-mirror"
-        depends_on: "upload-repository-pipeline"
         command: |
-          mkdir -p .buildkite/scripts
-          buildkite-agent artifact download ".buildkite/scripts/checkout-benchmark.sh" . \
-            --step upload-repository-pipeline
-          chmod +x .buildkite/scripts/checkout-benchmark.sh
-          .buildkite/scripts/checkout-benchmark.sh mirror "$${LLVM_DEMO_CHECKOUT_PROFILE}"
+          bash .buildkite/scripts/checkout-benchmark.sh \
+            mirror "$${LLVM_DEMO_CHECKOUT_PROFILE}"
         agents:
           queue: "hosted-linux"
         artifact_paths:
@@ -45,9 +38,7 @@ steps:
           - "checkout-network"
           - "checkout-mirror"
         command: |
-          mkdir -p .buildkite/scripts checkout-benchmark
-          buildkite-agent artifact download ".buildkite/scripts/compare-checkouts.py" . \
-            --step upload-repository-pipeline
+          mkdir -p checkout-benchmark
           buildkite-agent artifact download "checkout-benchmark/network-metrics.json" . \
             --step checkout-network
           buildkite-agent artifact download "checkout-benchmark/mirror-metrics.json" . \

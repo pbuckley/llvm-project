@@ -71,10 +71,10 @@ waterfall:
    Buildkite annotation with clone time, working-tree materialization time,
    local object storage, speedup, and projected savings across 12 lanes.
 
-The stopwatch covers `git clone` plus `git checkout`. Queueing, agent startup,
-artifact download, and the jobs' skipped default checkout are excluded, so the
-two samples are directly comparable. Raw Git output and JSON metrics are kept
-as build artifacts for follow-up with a prospect.
+The stopwatch covers the controlled `git clone` plus `git checkout`. Queueing,
+agent startup, and each benchmark job's identical native Buildkite checkout are
+excluded, so the two samples are directly comparable. Raw Git output and JSON
+metrics are kept as build artifacts for follow-up with a prospect.
 
 The Hosted Agents cluster currently has Git mirror volumes enabled, including
 a 5 GiB `buildkite-git-mirror-pbuckley-llvm-project` volume. These volumes are
@@ -101,7 +101,6 @@ the cache for later builds.
 | Git mirror volume | Native Hosted Agent mirror, shared within the cluster | Avoids repeatedly transferring large Git object graphs |
 | Shallow checkout | `checkout.depth: 2` for normal build jobs | Preserves first-parent diffing without fetching unnecessary history |
 | No submodules | `checkout.submodules: false` | Avoids work LLVM does not need for these targets |
-| Checkout-free utility jobs | `checkout.skip: true` for benchmark and comparison jobs | Prevents source checkout for jobs that only need uploaded scripts/artifacts |
 | Dynamic fan-out | `monorepo-diff#v1.11.0` | Avoids provisioning and checking out untouched project lanes |
 
 For production extensions, Buildkite also supports native sparse checkout for
