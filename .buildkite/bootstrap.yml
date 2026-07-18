@@ -3,7 +3,7 @@ steps:
     key: "choose-demo-mode"
     prompt: |
       Fast is the default and builds only projects selected by the diff.
-      Full fan-out deliberately selects every demo lane and is concurrency-capped.
+      Full fan-out deliberately selects every demo lane for natural parallelism.
     fields:
       - select: "Fan-out mode"
         key: "llvm-demo-mode"

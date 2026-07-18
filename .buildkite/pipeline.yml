@@ -25,8 +25,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh llvm"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -41,8 +39,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh clang"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -55,8 +51,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh lld"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -67,13 +61,11 @@ steps:
               skip_path:
                 - "libcxx/docs/**"
               config:
-                label: ":runner: C++ runtimes — libc++"
+                label: ":runner: C++ runtimes — compile algorithm.cpp"
                 key: "build-runtimes"
                 command: ".buildkite/scripts/build-component.sh runtimes"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -86,8 +78,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh mlir"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -100,8 +90,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh flang"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -114,8 +102,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh lldb"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -126,8 +112,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh compiler-rt"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -141,8 +125,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh openmp"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -155,8 +137,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh bolt"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -169,8 +149,6 @@ steps:
                 command: ".buildkite/scripts/build-component.sh polly"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 30
 
             - path:
@@ -182,8 +160,6 @@ steps:
                 command: ".buildkite/scripts/check-docs.sh"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 10
 
             - path:
@@ -194,8 +170,6 @@ steps:
                 command: ".buildkite/scripts/check-pipeline.sh"
                 agents:
                   queue: "hosted-linux"
-                concurrency: 4
-                concurrency_group: "llvm-monorepo-demo/build-lanes"
                 timeout_in_minutes: 10
 
             - default:

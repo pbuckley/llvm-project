@@ -30,7 +30,7 @@ out and builds the real LLVM source at the chosen commit.
 | LLVM core | `llvm/` (excluding docs) | `llvm-config` |
 | Clang | `clang/`, `clang-tools-extra/` | `clang-tblgen` |
 | LLD | `lld/` | `Strings.cpp` translation unit |
-| C++ runtimes | `libcxx/`, `libcxxabi/`, `libunwind/`, `runtimes/` | `cxx` |
+| C++ runtimes | `libcxx/`, `libcxxabi/`, `libunwind/`, `runtimes/` | `algorithm.cpp` translation unit |
 | MLIR | `mlir/` | `mlir-tblgen` |
 | Flang | `flang/` | `FortranParser` |
 | LLDB | `lldb/` | `lldb-argdumper` |
@@ -52,20 +52,20 @@ mirrors when a mirror volume is available.
 
 ## Hosted Agent estimate
 
-The pipeline caps generated lanes at **4 concurrent jobs**. Buildkite Hosted
-Agents are billed per vCPU-minute, measured to the second. At the current
-published Linux rate of **$0.004 per vCPU-minute**, the configured Small Linux
-agents (2 vCPU) cost **$0.008 per running job-minute**.
+Buildkite Hosted Agents are billed per vCPU-minute, measured to the second. At
+the current published Linux rate of **$0.004 per vCPU-minute**, the configured
+Small Linux agents (2 vCPU) cost **$0.008 per running job-minute**. Full mode
+naturally fans all 12 generated lanes out concurrently when capacity permits.
 
 | Mode | Generated work | Peak concurrency | Agent-minutes | vCPU-minutes | Usage cost |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Verified fast talk track | bootstrap + detector + 3 builds | 3 | 4.31 | 8.62 | $0.035 |
 | Fast planning range | bootstrap + detector + 3 builds | 3 | 4–15 | 8–30 | $0.03–$0.12 |
-| Full fan-out estimate | bootstrap + detector + 11 builds + docs | 4 | 124–312 | 248–624 | $0.99–$2.50 |
+| Full fan-out estimate | bootstrap + detector + 11 builds + docs | 12 | 124–312 | 248–624 | $0.99–$2.50 |
 
 The verified fast run completed in 2 minutes 18 seconds. The full estimate is
-roughly 35–90 elapsed minutes at the four-job cap; its heavier project targets
-make agent-minutes a better planning measure than multiplying the fast result.
+roughly 20–35 elapsed minutes; its heavier project targets make agent-minutes a
+better planning measure than multiplying the fast result.
 Ranges include checkout and configuration. Git mirror/cache hits can reduce
 them materially, while 30-minute lane timeouts bound individual code builds.
 Actual billed vCPU-minutes are `sum(job runtime × job vCPU)`, so the Buildkite

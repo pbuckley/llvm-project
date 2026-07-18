@@ -3,8 +3,9 @@
 set -euo pipefail
 
 component="${1:?usage: build-component.sh COMPONENT}"
-jobs="${LLVM_DEMO_BUILD_JOBS:-4}"
+jobs="${LLVM_DEMO_BUILD_JOBS:-2}"
 build_root="${BUILDKITE_BUILD_CHECKOUT_PATH:-${PWD}}/build/demo/${component}"
+source_root="llvm"
 projects=""
 runtimes=""
 target=""
@@ -24,8 +25,9 @@ case "${component}" in
     compile_source="lld/Common/Strings.cpp"
     ;;
   runtimes)
+    source_root="runtimes"
     runtimes="libcxx;libcxxabi;libunwind"
-    target="cxx"
+    compile_source="libcxx/src/algorithm.cpp"
     ;;
   mlir)
     projects="mlir"
@@ -50,7 +52,9 @@ case "${component}" in
     target="builtins"
     ;;
   openmp)
-    projects="openmp"
+    source_root="runtimes"
+    projects=""
+    runtimes="openmp"
     target="omp"
     ;;
   bolt)
@@ -94,7 +98,7 @@ if (( ${#missing_tools[@]} > 0 )); then
 fi
 
 cmake_args=(
-  -S llvm
+  -S "${source_root}"
   -B "${build_root}"
   -G Ninja
   -DCMAKE_BUILD_TYPE=Release
