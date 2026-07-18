@@ -10,6 +10,7 @@ projects=""
 runtimes=""
 target=""
 compile_source=""
+compile_cxx_standard=""
 extra_cmake_args=()
 
 case "${component}" in
@@ -28,6 +29,7 @@ case "${component}" in
     source_root="runtimes"
     runtimes="libcxx;libcxxabi;libunwind"
     compile_source="libcxx/src/algorithm.cpp"
+    compile_cxx_standard="c++20"
     ;;
   mlir)
     projects="mlir"
@@ -139,8 +141,14 @@ cmake "${cmake_args[@]}"
 
 if [[ -n "${compile_source}" ]]; then
   echo "--- :hammer: Compile ${compile_source}"
-  python3 .buildkite/scripts/compile-one.py \
+  compile_command=(
+    python3 .buildkite/scripts/compile-one.py
     "${build_root}/compile_commands.json" "${compile_source}"
+  )
+  if [[ -n "${compile_cxx_standard}" ]]; then
+    compile_command+=(--cxx-standard "${compile_cxx_standard}")
+  fi
+  "${compile_command[@]}"
   echo "+++ :white_check_mark: ${component} representative compile passed"
   exit 0
 fi
