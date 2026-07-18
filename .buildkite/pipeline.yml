@@ -61,7 +61,7 @@ steps:
               skip_path:
                 - "libcxx/docs/**"
               config:
-                label: ":runner: C++ runtimes — compile algorithm.cpp"
+                label: ":runner: C++ runtimes — generate libc++ headers"
                 key: "build-runtimes"
                 command: ".buildkite/scripts/build-component.sh runtimes"
                 agents:

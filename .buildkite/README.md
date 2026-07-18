@@ -30,7 +30,7 @@ out and builds the real LLVM source at the chosen commit.
 | LLVM core | `llvm/` (excluding docs) | `llvm-config` |
 | Clang | `clang/`, `clang-tools-extra/` | `clang-tblgen` |
 | LLD | `lld/` | `Strings.cpp` translation unit |
-| C++ runtimes | `libcxx/`, `libcxxabi/`, `libunwind/`, `runtimes/` | `algorithm.cpp` translation unit |
+| C++ runtimes | `libcxx/`, `libcxxabi/`, `libunwind/`, `runtimes/` | generated libc++ headers |
 | MLIR | `mlir/` | `mlir-tblgen` |
 | Flang | `flang/` | `FortranParser` |
 | LLDB | `lldb/` | `lldb-argdumper` |
