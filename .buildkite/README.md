@@ -45,6 +45,11 @@ These are representative build targets, not exhaustive release builds. That
 keeps the demo useful on ephemeral agents while still performing real C/C++
 configuration and compilation.
 
+Jobs use two-commit shallow clones so discovery can compute the first-parent
+diff while generated build lanes avoid downloading LLVM's full history. This
+bounds cold-cache transfer while remaining compatible with Hosted Agent Git
+mirrors when a mirror volume is available.
+
 ## Hosted Agent estimate
 
 The pipeline caps code lanes at **4 concurrent jobs**. Buildkite Hosted Agents

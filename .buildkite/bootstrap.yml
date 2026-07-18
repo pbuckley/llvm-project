@@ -21,4 +21,8 @@ steps:
       buildkite-agent pipeline upload .buildkite/pipeline.yml
     agents:
       queue: "hosted-linux"
+    env:
+      BUILDKITE_GIT_CLONE_FLAGS: "-v --depth=2"
+      BUILDKITE_GIT_FETCH_FLAGS: "-v --prune --depth=2"
+      BUILDKITE_GIT_SUBMODULES: "false"
     timeout_in_minutes: 10
