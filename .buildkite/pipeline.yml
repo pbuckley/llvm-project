@@ -1,8 +1,10 @@
 env:
-  BUILDKITE_GIT_CLONE_FLAGS: "-v --depth=2"
-  BUILDKITE_GIT_FETCH_FLAGS: "-v --prune --depth=2"
-  BUILDKITE_GIT_SUBMODULES: "false"
   LLVM_DEMO_MODE: "${LLVM_DEMO_MODE}"
+  LLVM_DEMO_CHECKOUT_PROFILE: "${LLVM_DEMO_CHECKOUT_PROFILE}"
+
+checkout:
+  depth: 2
+  submodules: false
 
 steps:
   - label: ":mag: Discover affected LLVM projects"

@@ -13,6 +13,14 @@ Use **New Build** in the `LLVM Monorepo Demo` pipeline. The first form offers:
 - **Full — all project lanes:** emits one representative path for every lane,
   creating all 11 code-build lanes plus documentation integrity.
 
+The same form can add a checkout-performance lab:
+
+- **Off (default):** run only the selected build fan-out.
+- **Quick:** compare a depth-1 GitHub clone with Buildkite's attached Git mirror.
+- **Full history:** repeat the comparison with the repository's multi-gigabyte
+  history. This is the strongest prospect demonstration, but intentionally
+  downloads the complete repository once for the uncached baseline.
+
 For a repeatable talk-track scenario, set the build environment variable
 `LLVM_DEMO_CHANGED_PATHS` to comma-separated paths. For example:
 
@@ -50,6 +58,56 @@ first-parent diff. Hosted Agent checkout hooks may substitute their managed Git
 mirror strategy: a cold run can populate the full LLVM mirror, while later runs
 benefit from the warm mirror cache.
 
+## Checkout performance lab
+
+The lab creates a prospect-friendly three-step group in the Buildkite
+waterfall:
+
+1. **Uncached network clone** fetches the selected history directly from
+   GitHub with no job-local object cache.
+2. **Buildkite Git mirror clone** checks out the identical commit using the
+   cluster's attached mirror and Git's `--reference-if-able` object borrowing.
+3. **Checkout comparison** downloads both result artifacts and publishes a
+   Buildkite annotation with clone time, working-tree materialization time,
+   local object storage, speedup, and projected savings across 12 lanes.
+
+The stopwatch covers `git clone` plus `git checkout`. Queueing, agent startup,
+artifact download, and the jobs' skipped default checkout are excluded, so the
+two samples are directly comparable. Raw Git output and JSON metrics are kept
+as build artifacts for follow-up with a prospect.
+
+The Hosted Agents cluster currently has Git mirror volumes enabled, including
+a 5 GiB `buildkite-git-mirror-pbuckley-llvm-project` volume. These volumes are
+cluster-scoped, backed by high-performance NVMe storage, and attached on a
+best-effort basis. A miss falls back safely to GitHub; successful jobs refresh
+the cache for later builds.
+
+### Demo talk track
+
+- Start with **Fast + Quick** for a short, repeatable meeting demo.
+- Open the checkout annotation and emphasize that both jobs produced the same
+  commit, working-tree size, and tracked-file count.
+- Point out that the mirror checkout stores very few objects in the ephemeral
+  job because it borrows from the shared cache volume.
+- Re-run as **Fast + Full history** when the prospect wants the multi-GB cold
+  clone comparison. The cached side remains a local reference checkout.
+- Relate the per-checkout saving to the 12-way LLVM fan-out: network and disk
+  savings multiply with every parallel monorepo lane.
+
+### Optimizations demonstrated
+
+| Optimization | Demo implementation | Why it matters |
+| --- | --- | --- |
+| Git mirror volume | Native Hosted Agent mirror, shared within the cluster | Avoids repeatedly transferring large Git object graphs |
+| Shallow checkout | `checkout.depth: 2` for normal build jobs | Preserves first-parent diffing without fetching unnecessary history |
+| No submodules | `checkout.submodules: false` | Avoids work LLVM does not need for these targets |
+| Checkout-free utility jobs | `checkout.skip: true` for benchmark and comparison jobs | Prevents source checkout for jobs that only need uploaded scripts/artifacts |
+| Dynamic fan-out | `monorepo-diff#v1.11.0` | Avoids provisioning and checking out untouched project lanes |
+
+For production extensions, Buildkite also supports native sparse checkout for
+path-focused jobs, pipeline cache volumes for tool/build data, and durable
+artifact or remote caches where best-effort local state is not appropriate.
+
 ## Hosted Agent measurements
 
 Buildkite Hosted Agents are billed per vCPU-minute, measured to the second. At
@@ -75,8 +133,11 @@ Usage page remains authoritative after a run.
 - `bootstrap.yml` is copied to the Buildkite pipeline settings so the New Build
   dialog can collect the mode before an agent starts.
 - `pipeline.yml` is the repository pipeline uploaded after mode selection.
+- `checkout-lab.yml` defines the parallel uncached and mirror comparison.
 - `scripts/changed-files.sh` is the plugin's newline-delimited diff command.
 - `scripts/build-component.sh` maps each lane to a small real CMake/Ninja build.
+- `scripts/checkout-benchmark.sh` records controlled clone/checkout metrics.
+- `scripts/compare-checkouts.py` renders the annotation and savings model.
 
 The Buildkite pipeline has no webhook and the demo branch has no pull request,
 so this configuration does not propagate to upstream LLVM.
@@ -85,5 +146,7 @@ so this configuration does not propagate to upstream LLVM.
 
 - [Monorepo Diff Buildkite Plugin](https://github.com/buildkite-plugins/monorepo-diff-buildkite-plugin)
 - [Buildkite Hosted Agents](https://buildkite.com/docs/agent/buildkite-hosted)
+- [Hosted Agent cache volumes](https://buildkite.com/docs/agent/buildkite-hosted/cache-volumes)
+- [Git checkout optimization](https://buildkite.com/docs/pipelines/best-practices/git-checkout-optimization)
 - [Hosted Agent pricing](https://buildkite.com/pricing/)
 - [Dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines)
