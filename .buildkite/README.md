@@ -53,10 +53,10 @@ These are representative build targets, not exhaustive release builds. That
 keeps the demo useful on ephemeral agents while still performing real C/C++
 configuration and compilation.
 
-The pipeline requests two-commit shallow clones so discovery can compute the
-first-parent diff. Hosted Agent checkout hooks may substitute their managed Git
-mirror strategy: a cold run can populate the full LLVM mirror, while later runs
-benefit from the warm mirror cache.
+Normal build jobs use Buildkite's native two-commit shallow checkout so
+discovery can compute the first-parent diff. The Hosted Agent also attaches its
+managed Git mirror, so the shallow working checkout can borrow existing objects
+instead of transferring them again.
 
 ## Checkout performance lab
 
@@ -75,6 +75,21 @@ The stopwatch covers the controlled `git clone` plus `git checkout`. Queueing,
 agent startup, and each benchmark job's identical native Buildkite checkout are
 excluded, so the two samples are directly comparable. Raw Git output and JSON
 metrics are kept as build artifacts for follow-up with a prospect.
+
+### Verified checkout results
+
+Both profiles produced the same **2.56 GiB working tree with 180,914 tracked
+files** on July 18, 2026.
+
+| Profile | History delivered | Network Git time | Mirror Git time | Speedup | Time saved | Job-local objects avoided |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| [Quick — Build #8](https://buildkite.com/buildkite-solutions/llvm-monorepo-demo/builds/8) | depth 1 / 291 MiB | 37.869s | 12.363s | 3.06× | 25.506s / 67.4% | 291 MiB |
+| [Full history — Build #9](https://buildkite.com/buildkite-solutions/llvm-monorepo-demo/builds/9) | 3.76 GiB | 3m 24.349s | 6.924s | 29.51× | 3m 17.425s / 96.6% | 3.76 GiB |
+
+In the full-history Buildkite waterfall, the complete uncached benchmark job
+took **3m 36.366s** while the mirror job took **18.438s**. Repeating the
+measured Git-time saving across the demo's 12 generated lanes represents about
+**39.49 agent-minutes** and **$0.316** of Hosted Agent usage avoided per build.
 
 The Hosted Agents cluster currently has Git mirror volumes enabled, including
 a 5 GiB `buildkite-git-mirror-pbuckley-llvm-project` volume. These volumes are
