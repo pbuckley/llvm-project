@@ -52,22 +52,24 @@ mirrors when a mirror volume is available.
 
 ## Hosted Agent estimate
 
-The pipeline caps code lanes at **4 concurrent jobs**. Buildkite Hosted Agents
-are billed per vCPU-minute, measured to the second. At the current published
-Linux rate of **$0.004 per vCPU-minute**, a Medium Linux agent (4 vCPU) costs
-**$0.016 per running job-minute**. Small agents halve both vCPU use and cost.
+The pipeline caps generated lanes at **4 concurrent jobs**. Buildkite Hosted
+Agents are billed per vCPU-minute, measured to the second. At the current
+published Linux rate of **$0.004 per vCPU-minute**, the configured Small Linux
+agents (2 vCPU) cost **$0.008 per running job-minute**.
 
-Cold-cache planning ranges for the configured representative targets are:
-
-| Mode | Generated work | Peak job concurrency | Estimated job-minutes | Medium-agent vCPU-minutes | Estimated usage cost |
+| Mode | Generated work | Peak concurrency | Agent-minutes | vCPU-minutes | Usage cost |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Fast talk-track (3 code lanes) | bootstrap + detector + 3 builds | 3 | 27–60 | 108–240 | $0.43–$0.96 |
-| Full fan-out | bootstrap + detector + 11 builds + docs | 4 | 124–312 | 496–1,248 | $1.98–$4.99 |
+| Verified fast talk track | bootstrap + detector + 3 builds | 3 | 4.31 | 8.62 | $0.035 |
+| Fast planning range | bootstrap + detector + 3 builds | 3 | 4–15 | 8–30 | $0.03–$0.12 |
+| Full fan-out estimate | bootstrap + detector + 11 builds + docs | 4 | 124–312 | 248–624 | $0.99–$2.50 |
 
-The ranges include checkout and configuration. Git mirror/cache hits can reduce
-them materially; the 30-minute lane timeouts bound a pathological cold run.
+The verified fast run completed in 2 minutes 18 seconds. The full estimate is
+roughly 35–90 elapsed minutes at the four-job cap; its heavier project targets
+make agent-minutes a better planning measure than multiplying the fast result.
+Ranges include checkout and configuration. Git mirror/cache hits can reduce
+them materially, while 30-minute lane timeouts bound individual code builds.
 Actual billed vCPU-minutes are `sum(job runtime × job vCPU)`, so the Buildkite
-Usage page is authoritative after a run.
+Usage page remains authoritative after a run.
 
 ## Files
 
