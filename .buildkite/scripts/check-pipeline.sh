@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+for script in .buildkite/scripts/*.sh; do
+  bash -n "${script}"
+done
+
+if command -v buildkite-agent >/dev/null 2>&1; then
+  buildkite-agent pipeline upload --dry-run .buildkite/pipeline.yml >/dev/null
+elif command -v bk >/dev/null 2>&1; then
+  bk pipeline validate --file .buildkite/pipeline.yml
+else
+  echo "Shell syntax passed; no Buildkite validator is installed on this machine."
+fi
+
+echo "Pipeline integrity checks passed."

@@ -1,0 +1,207 @@
+env:
+  LLVM_DEMO_MODE: "${LLVM_DEMO_MODE}"
+
+steps:
+  - label: ":mag: Discover affected LLVM projects"
+    key: "monorepo-diff"
+    command: ".buildkite/scripts/annotate-plan.sh"
+    agents:
+      queue: "hosted-linux"
+    timeout_in_minutes: 10
+    plugins:
+      - monorepo-diff#v1.11.0:
+          diff: ".buildkite/scripts/changed-files.sh"
+          watch:
+            - path:
+                - "llvm/**"
+              skip_path:
+                - "llvm/docs/**"
+              config:
+                label: ":gear: LLVM core — llvm-config"
+                key: "build-llvm-core"
+                command: ".buildkite/scripts/build-component.sh llvm"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "clang/**"
+                - "clang-tools-extra/**"
+              skip_path:
+                - "clang/docs/**"
+                - "clang-tools-extra/docs/**"
+              config:
+                label: ":hammer: Clang — clang-tblgen"
+                key: "build-clang"
+                command: ".buildkite/scripts/build-component.sh clang"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "lld/**"
+              skip_path:
+                - "lld/docs/**"
+              config:
+                label: ":link: LLD — lldCommon"
+                key: "build-lld"
+                command: ".buildkite/scripts/build-component.sh lld"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "libcxx/**"
+                - "libcxxabi/**"
+                - "libunwind/**"
+                - "runtimes/**"
+              skip_path:
+                - "libcxx/docs/**"
+              config:
+                label: ":runner: C++ runtimes — libc++"
+                key: "build-runtimes"
+                command: ".buildkite/scripts/build-component.sh runtimes"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "mlir/**"
+              skip_path:
+                - "mlir/docs/**"
+              config:
+                label: ":building_construction: MLIR — mlir-tblgen"
+                key: "build-mlir"
+                command: ".buildkite/scripts/build-component.sh mlir"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "flang/**"
+              skip_path:
+                - "flang/docs/**"
+              config:
+                label: ":capital_abcd: Flang — FortranParser"
+                key: "build-flang"
+                command: ".buildkite/scripts/build-component.sh flang"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "lldb/**"
+              skip_path:
+                - "lldb/docs/**"
+              config:
+                label: ":lady_beetle: LLDB — lldb-argdumper"
+                key: "build-lldb"
+                command: ".buildkite/scripts/build-component.sh lldb"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "compiler-rt/**"
+              config:
+                label: ":medical_symbol: compiler-rt — builtins"
+                key: "build-compiler-rt"
+                command: ".buildkite/scripts/build-component.sh compiler-rt"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "openmp/**"
+                - "offload/**"
+              skip_path:
+                - "openmp/docs/**"
+              config:
+                label: ":thread: OpenMP — libomp"
+                key: "build-openmp"
+                command: ".buildkite/scripts/build-component.sh openmp"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "bolt/**"
+              skip_path:
+                - "bolt/docs/**"
+              config:
+                label: ":zap: BOLT — llvm-bolt-heatmap"
+                key: "build-bolt"
+                command: ".buildkite/scripts/build-component.sh bolt"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "polly/**"
+              skip_path:
+                - "polly/docs/**"
+              config:
+                label: ":parrot: Polly — optimizer library"
+                key: "build-polly"
+                command: ".buildkite/scripts/build-component.sh polly"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 30
+
+            - path:
+                - "**/*.md"
+                - "**/*.rst"
+              config:
+                label: ":memo: Documentation integrity"
+                key: "check-docs"
+                command: ".buildkite/scripts/check-docs.sh"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 10
+
+            - path:
+                - ".buildkite/**"
+              config:
+                label: ":buildkite: Pipeline integrity"
+                key: "check-pipeline"
+                command: ".buildkite/scripts/check-pipeline.sh"
+                agents:
+                  queue: "hosted-linux"
+                concurrency: 4
+                concurrency_group: "llvm-monorepo-demo/build-lanes"
+                timeout_in_minutes: 10
+
+            - default:
+                config:
+                  label: ":white_check_mark: No buildable project changed"
+                  key: "no-project-change"
+                  command: |
+                    echo "The diff did not touch a configured LLVM project lane."
+                    echo "See .buildkite/README.md for the path map and demo controls."
+                  agents:
+                    queue: "hosted-linux"
+                  timeout_in_minutes: 5

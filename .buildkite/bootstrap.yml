@@ -1,0 +1,24 @@
+steps:
+  - block: ":control_knobs: Choose the LLVM demo mode"
+    key: "choose-demo-mode"
+    prompt: |
+      Fast is the default and builds only projects selected by the diff.
+      Full fan-out deliberately selects every demo lane and is concurrency-capped.
+    fields:
+      - select: "Fan-out mode"
+        key: "llvm-demo-mode"
+        default: "fast"
+        options:
+          - label: "Fast — changed projects only (default)"
+            value: "fast"
+          - label: "Full — all project lanes"
+            value: "full"
+
+  - label: ":pipeline: Upload the repository pipeline"
+    key: "upload-repository-pipeline"
+    command: |
+      export LLVM_DEMO_MODE="$$(buildkite-agent meta-data get llvm-demo-mode --default fast)"
+      buildkite-agent pipeline upload .buildkite/pipeline.yml
+    agents:
+      queue: "hosted-linux"
+    timeout_in_minutes: 10
