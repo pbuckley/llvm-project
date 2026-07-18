@@ -50,24 +50,23 @@ first-parent diff. Hosted Agent checkout hooks may substitute their managed Git
 mirror strategy: a cold run can populate the full LLVM mirror, while later runs
 benefit from the warm mirror cache.
 
-## Hosted Agent estimate
+## Hosted Agent measurements
 
 Buildkite Hosted Agents are billed per vCPU-minute, measured to the second. At
 the current published Linux rate of **$0.004 per vCPU-minute**, the configured
 Small Linux agents (2 vCPU) cost **$0.008 per running job-minute**. Full mode
 naturally fans all 12 generated lanes out concurrently when capacity permits.
 
-| Mode | Generated work | Peak concurrency | Agent-minutes | vCPU-minutes | Usage cost |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Verified fast talk track | bootstrap + detector + 3 builds | 3 | 4.31 | 8.62 | $0.035 |
-| Fast planning range | bootstrap + detector + 3 builds | 3 | 4–15 | 8–30 | $0.03–$0.12 |
-| Full fan-out estimate | bootstrap + detector + 11 builds + docs | 12 | 124–312 | 248–624 | $0.99–$2.50 |
+| Mode | Generated work | Elapsed | Peak concurrency | Agent-minutes | vCPU-minutes | Usage cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Verified fast talk track | bootstrap + detector + 3 builds | 2m 18s | 3 | 4.31 | 8.62 | $0.035 |
+| Verified full fan-out | bootstrap + detector + 11 builds + docs | 4m 50s | 12 | 17.10 | 34.20 | $0.137 |
 
-The verified fast run completed in 2 minutes 18 seconds. The full estimate is
-roughly 20–35 elapsed minutes; its heavier project targets make agent-minutes a
-better planning measure than multiplying the fast result.
-Ranges include checkout and configuration. Git mirror/cache hits can reduce
-them materially, while 30-minute lane timeouts bound individual code builds.
+The full measurement is [Build #6](https://buildkite.com/buildkite-solutions/llvm-monorepo-demo/builds/6),
+an all-green warm-mirror run of commit `89949c68ef7b`. It ran from
+21:14:40.497Z to 21:19:30.418Z on July 18, 2026. An earlier cold-cache
+diagnostic caused multiple agents to populate LLVM's roughly 3.5 GiB Git
+mirror, demonstrating that checkout cache state can dominate a first run.
 Actual billed vCPU-minutes are `sum(job runtime × job vCPU)`, so the Buildkite
 Usage page remains authoritative after a run.
 
