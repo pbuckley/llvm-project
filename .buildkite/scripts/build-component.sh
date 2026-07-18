@@ -8,6 +8,7 @@ build_root="${BUILDKITE_BUILD_CHECKOUT_PATH:-${PWD}}/build/demo/${component}"
 projects=""
 runtimes=""
 target=""
+compile_source=""
 extra_cmake_args=()
 
 case "${component}" in
@@ -20,7 +21,7 @@ case "${component}" in
     ;;
   lld)
     projects="lld"
-    target="lldCommon"
+    compile_source="lld/Common/Strings.cpp"
     ;;
   runtimes)
     runtimes="libcxx;libcxxabi;libunwind"
@@ -67,8 +68,9 @@ case "${component}" in
 esac
 
 if [[ "${LLVM_DEMO_DRY_RUN:-false}" == "true" ]]; then
-  printf 'component=%s projects=%s runtimes=%s target=%s parallel=%s\n' \
-    "${component}" "${projects}" "${runtimes}" "${target}" "${jobs}"
+  printf 'component=%s projects=%s runtimes=%s target=%s source=%s parallel=%s\n' \
+    "${component}" "${projects}" "${runtimes}" "${target}" \
+    "${compile_source}" "${jobs}"
   exit 0
 fi
 
@@ -96,6 +98,7 @@ cmake_args=(
   -B "${build_root}"
   -G Ninja
   -DCMAKE_BUILD_TYPE=Release
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
   -DLLVM_ENABLE_PROJECTS="${projects}"
   -DLLVM_ENABLE_RUNTIMES="${runtimes}"
   -DLLVM_TARGETS_TO_BUILD=X86
@@ -123,12 +126,20 @@ cmake_args+=("${extra_cmake_args[@]}")
 
 echo "--- :mag: ${component} lane"
 echo "Mode: ${LLVM_DEMO_MODE:-fast}"
-echo "Target: ${target}"
+echo "Target: ${target:-single translation unit}"
 echo "Agent CPUs: $(getconf _NPROCESSORS_ONLN 2>/dev/null || echo unknown)"
 echo "Build parallelism: ${jobs}"
 
 echo "--- :cmake: Configure"
 cmake "${cmake_args[@]}"
+
+if [[ -n "${compile_source}" ]]; then
+  echo "--- :hammer: Compile ${compile_source}"
+  python3 .buildkite/scripts/compile-one.py \
+    "${build_root}/compile_commands.json" "${compile_source}"
+  echo "+++ :white_check_mark: ${component} representative compile passed"
+  exit 0
+fi
 
 echo "--- :hammer: Build ${target}"
 cmake --build "${build_root}" --target "${target}" --parallel "${jobs}"

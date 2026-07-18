@@ -50,7 +50,7 @@ steps:
               skip_path:
                 - "lld/docs/**"
               config:
-                label: ":link: LLD — lldCommon"
+                label: ":link: LLD — compile Strings.cpp"
                 key: "build-lld"
                 command: ".buildkite/scripts/build-component.sh lld"
                 agents:
