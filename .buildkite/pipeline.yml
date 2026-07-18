@@ -85,7 +85,7 @@ steps:
               skip_path:
                 - "flang/docs/**"
               config:
-                label: ":capital_abcd: Flang — FortranParser"
+                label: ":capital_abcd: Flang — compile default-kinds.cpp"
                 key: "build-flang"
                 command: ".buildkite/scripts/build-component.sh flang"
                 agents:
@@ -132,7 +132,7 @@ steps:
               skip_path:
                 - "bolt/docs/**"
               config:
-                label: ":zap: BOLT — llvm-bolt-heatmap"
+                label: ":zap: BOLT — compile Utils.cpp"
                 key: "build-bolt"
                 command: ".buildkite/scripts/build-component.sh bolt"
                 agents:
@@ -144,7 +144,7 @@ steps:
               skip_path:
                 - "polly/docs/**"
               config:
-                label: ":parrot: Polly — optimizer library"
+                label: ":parrot: Polly — compile PollyDebug.cpp"
                 key: "build-polly"
                 command: ".buildkite/scripts/build-component.sh polly"
                 agents:

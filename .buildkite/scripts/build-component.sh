@@ -35,7 +35,7 @@ case "${component}" in
     ;;
   flang)
     projects="clang;mlir;flang"
-    target="FortranParser"
+    compile_source="flang/lib/Support/default-kinds.cpp"
     ;;
   lldb)
     projects="clang;lldb"
@@ -59,11 +59,11 @@ case "${component}" in
     ;;
   bolt)
     projects="bolt"
-    target="llvm-bolt-heatmap"
+    compile_source="bolt/lib/Utils/Utils.cpp"
     ;;
   polly)
     projects="polly"
-    target="Polly"
+    compile_source="polly/lib/Support/PollyDebug.cpp"
     ;;
   *)
     echo "Unknown LLVM demo component: ${component}" >&2

@@ -32,12 +32,12 @@ out and builds the real LLVM source at the chosen commit.
 | LLD | `lld/` | `Strings.cpp` translation unit |
 | C++ runtimes | `libcxx/`, `libcxxabi/`, `libunwind/`, `runtimes/` | generated libc++ headers |
 | MLIR | `mlir/` | `mlir-tblgen` |
-| Flang | `flang/` | `FortranParser` |
+| Flang | `flang/` | `default-kinds.cpp` translation unit |
 | LLDB | `lldb/` | `lldb-argdumper` |
 | compiler-rt | `compiler-rt/` | `builtins` |
 | OpenMP/offload | `openmp/`, `offload/` | `omp` |
-| BOLT | `bolt/` | `llvm-bolt-heatmap` |
-| Polly | `polly/` | `Polly` |
+| BOLT | `bolt/` | `Utils.cpp` translation unit |
+| Polly | `polly/` | `PollyDebug.cpp` translation unit |
 | Documentation | Markdown, reStructuredText | UTF-8/path integrity |
 | Pipeline | `.buildkite/` | shell and pipeline validation |
 
@@ -45,10 +45,10 @@ These are representative build targets, not exhaustive release builds. That
 keeps the demo useful on ephemeral agents while still performing real C/C++
 configuration and compilation.
 
-Jobs use two-commit shallow clones so discovery can compute the first-parent
-diff while generated build lanes avoid downloading LLVM's full history. This
-bounds cold-cache transfer while remaining compatible with Hosted Agent Git
-mirrors when a mirror volume is available.
+The pipeline requests two-commit shallow clones so discovery can compute the
+first-parent diff. Hosted Agent checkout hooks may substitute their managed Git
+mirror strategy: a cold run can populate the full LLVM mirror, while later runs
+benefit from the warm mirror cache.
 
 ## Hosted Agent estimate
 
