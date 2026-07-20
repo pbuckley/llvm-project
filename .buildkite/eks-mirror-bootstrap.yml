@@ -1,0 +1,29 @@
+checkout:
+  depth: 2
+  submodules: false
+
+steps:
+  - block: ":control_knobs: Choose the EKS mirror demo profile"
+    key: "choose-eks-mirror-profile"
+    prompt: |
+      Quick compares depth-1 clones. Full history compares delivery of LLVM's
+      multi-gigabyte Git history. Both samples run on the same self-hosted EKS
+      queue; only use of the persistent EFS Git mirror differs.
+    fields:
+      - select: "Checkout profile"
+        key: "llvm-demo-checkout-profile"
+        default: "quick"
+        options:
+          - label: "Quick - depth-1 network vs EKS/EFS mirror"
+            value: "quick"
+          - label: "Full history - multi-GB network vs EKS/EFS mirror"
+            value: "full"
+
+  - label: ":pipeline: Upload the two-way checkout lab"
+    key: "upload-eks-mirror-lab"
+    command: |
+      export LLVM_DEMO_CHECKOUT_PROFILE="$$(buildkite-agent meta-data get llvm-demo-checkout-profile --default quick)"
+      buildkite-agent pipeline upload .buildkite/checkout-lab.yml
+    agents:
+      queue: "llvm-eks-mirror"
+    timeout_in_minutes: 60

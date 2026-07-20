@@ -8,8 +8,6 @@ steps:
     prompt: |
       Fast is the default and builds only projects selected by the diff.
       Full fan-out deliberately selects every demo lane for natural parallelism.
-      The optional checkout lab compares a direct GitHub clone with Buildkite's
-      cluster-scoped Git mirror using the same LLVM commit and working tree.
     fields:
       - select: "Fan-out mode"
         key: "llvm-demo-mode"
@@ -19,26 +17,11 @@ steps:
             value: "fast"
           - label: "Full — all project lanes"
             value: "full"
-      - select: "Checkout performance lab"
-        key: "llvm-demo-checkout-profile"
-        default: "off"
-        options:
-          - label: "Off — build demo only (default)"
-            value: "off"
-          - label: "Quick — depth-1 network vs mirror"
-            value: "quick"
-          - label: "Full history — multi-GB network vs mirror"
-            value: "full"
-
   - label: ":pipeline: Upload the repository pipeline"
     key: "upload-repository-pipeline"
     command: |
       export LLVM_DEMO_MODE="$$(buildkite-agent meta-data get llvm-demo-mode --default fast)"
-      export LLVM_DEMO_CHECKOUT_PROFILE="$$(buildkite-agent meta-data get llvm-demo-checkout-profile --default off)"
       buildkite-agent pipeline upload .buildkite/pipeline.yml
-      if [[ "$${LLVM_DEMO_CHECKOUT_PROFILE}" != "off" ]]; then
-        buildkite-agent pipeline upload .buildkite/checkout-lab.yml
-      fi
     agents:
       queue: "hosted-linux"
     timeout_in_minutes: 10

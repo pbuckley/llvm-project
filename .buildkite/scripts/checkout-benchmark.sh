@@ -2,8 +2,9 @@
 
 set -euo pipefail
 
-strategy="${1:?usage: checkout-benchmark.sh network|mirror [quick|full]}"
+strategy="${1:?usage: checkout-benchmark.sh network|mirror [quick|full] [sample-name]}"
 profile="${2:-${LLVM_DEMO_CHECKOUT_PROFILE:-quick}}"
+sample="${3:-${strategy}}"
 repo_url="${LLVM_DEMO_REPO_URL:-https://github.com/pbuckley/llvm-project.git}"
 branch="${BUILDKITE_BRANCH:-codex/buildkite-monorepo-demo}"
 commit="${BUILDKITE_COMMIT:-HEAD}"
@@ -25,21 +26,38 @@ case "${profile}" in
     ;;
 esac
 
+case "${sample}" in
+  network|eks-mirror) ;;
+  *)
+    echo "Unknown checkout sample: ${sample}" >&2
+    exit 64
+    ;;
+esac
+
 mkdir -p "${output_root}"
 task_root="$(mktemp -d "${TMPDIR:-/tmp}/llvm-checkout-benchmark.XXXXXX")"
 trap 'rm -rf -- "${task_root}"' EXIT
 destination="${task_root}/llvm-project"
-git_log="${output_root}/${strategy}-git.log"
-metrics_file="${output_root}/${strategy}-metrics.json"
-summary_file="${output_root}/${strategy}-summary.md"
+git_log="${output_root}/${sample}-git.log"
+metrics_file="${output_root}/${sample}-metrics.json"
+summary_file="${output_root}/${sample}-summary.md"
 mirror_path="${BUILDKITE_REPO_MIRROR:-}"
 mirror_used=false
+
+# Agent Stack runs checkout and command phases in separate containers. The
+# checkout phase computes BUILDKITE_REPO_MIRROR locally, while the configured
+# mirror root is propagated to every container. Reconstruct the repository
+# mirror path using the same non-alphanumeric replacement as Buildkite Agent.
+if [[ -z "${mirror_path}" && -n "${BUILDKITE_GIT_MIRRORS_PATH:-}" ]]; then
+  mirror_directory_name="$(printf '%s' "${repo_url}" | sed 's/[^[:alnum:]]/-/g')"
+  mirror_path="${BUILDKITE_GIT_MIRRORS_PATH}/${mirror_directory_name}"
+fi
 
 clone_command=(git clone --no-checkout --progress)
 if [[ "${strategy}" == "mirror" ]]; then
   if [[ -z "${mirror_path}" || ! -d "${mirror_path}" ]]; then
-    echo "Buildkite did not attach a Git mirror to this Hosted Agent." >&2
-    echo "Enable Git mirror volumes in the cluster's Cache Storage settings." >&2
+    echo "Buildkite did not expose a Git mirror to this job." >&2
+    echo "Configure Agent Stack gitMirrors with the EFS-backed PVC." >&2
     exit 69
   fi
   clone_command+=(--reference-if-able "${mirror_path}")
@@ -50,7 +68,7 @@ if [[ "${profile}" == "quick" ]]; then
 fi
 clone_command+=("${repo_url}" "${destination}")
 
-echo "--- :git: ${strategy} clone (${profile} profile)"
+echo "--- :git: ${sample} clone (${profile} profile)"
 echo "Repository: ${repo_url}"
 echo "Target commit: ${commit}"
 if [[ "${strategy}" == "mirror" ]]; then
@@ -81,7 +99,7 @@ if [[ -n "${mirror_path}" && -d "${mirror_path}" ]]; then
   mirror_bytes="$(( $(du -sk "${mirror_path}" | awk '{print $1}') * 1024 ))"
 fi
 
-python3 - "${metrics_file}" "${strategy}" "${profile}" "${clone_ms}" \
+python3 - "${metrics_file}" "${sample}" "${strategy}" "${profile}" "${clone_ms}" \
   "${checkout_ms}" "${total_ms}" "${local_object_bytes}" \
   "${working_tree_bytes}" "${mirror_bytes}" "${tracked_files}" \
   "${mirror_used}" "${repo_url}" "${commit}" <<'PY'
@@ -91,7 +109,8 @@ import sys
 
 (
     output,
-    strategy,
+    sample,
+    clone_strategy,
     profile,
     clone_ms,
     checkout_ms,
@@ -106,7 +125,8 @@ import sys
 ) = sys.argv[1:]
 
 metrics = {
-    "strategy": strategy,
+    "sample": sample,
+    "strategy": clone_strategy,
     "profile": profile,
     "clone_ms": int(clone_ms),
     "checkout_ms": int(checkout_ms),
@@ -123,7 +143,7 @@ Path(output).write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
 PY
 
 cat > "${summary_file}" <<MARKDOWN
-### ${strategy^} checkout sample
+### ${sample} checkout sample
 
 - **Profile:** ${profile}
 - **Clone/fetch:** $(printf '%d.%03d' "$((clone_ms / 1000))" "$((clone_ms % 1000))")s
@@ -134,9 +154,9 @@ cat > "${summary_file}" <<MARKDOWN
 MARKDOWN
 
 if command -v buildkite-agent >/dev/null 2>&1; then
-  buildkite-agent meta-data set "llvm-checkout-${strategy}-total-ms" "${total_ms}"
-  buildkite-agent annotate --style info --context "llvm-checkout-${strategy}" \
+  buildkite-agent meta-data set "llvm-checkout-${sample}-total-ms" "${total_ms}"
+  buildkite-agent annotate --style info --context "llvm-checkout-${sample}" \
     < "${summary_file}"
 fi
 
-echo "+++ :white_check_mark: ${strategy} checkout benchmark completed in ${total_ms}ms"
+echo "+++ :white_check_mark: ${sample} checkout benchmark completed in ${total_ms}ms"

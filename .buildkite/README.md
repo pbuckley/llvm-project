@@ -13,14 +13,6 @@ Use **New Build** in the `LLVM Monorepo Demo` pipeline. The first form offers:
 - **Full — all project lanes:** emits one representative path for every lane,
   creating all 11 code-build lanes plus documentation integrity.
 
-The same form can add a checkout-performance lab:
-
-- **Off (default):** run only the selected build fan-out.
-- **Quick:** compare a depth-1 GitHub clone with Buildkite's attached Git mirror.
-- **Full history:** repeat the comparison with the repository's multi-gigabyte
-  history. This is the strongest prospect demonstration, but intentionally
-  downloads the complete repository once for the uncached baseline.
-
 For a repeatable talk-track scenario, set the build environment variable
 `LLVM_DEMO_CHANGED_PATHS` to comma-separated paths. For example:
 
@@ -60,52 +52,33 @@ instead of transferring them again.
 
 ## Checkout performance lab
 
-The lab creates a prospect-friendly three-step group in the Buildkite
-waterfall:
+Terraform creates a separate `LLVM EKS Mirror Demo` pipeline in the
+`Self-Hosted K8s Stack (Demo)` cluster. Its New Build form offers Quick and Full
+history profiles. The lab creates a three-step group:
 
-1. **Uncached network clone** fetches the selected history directly from
-   GitHub with no job-local object cache.
-2. **Buildkite Git mirror clone** checks out the identical commit using the
-   cluster's attached mirror and Git's `--reference-if-able` object borrowing.
-3. **Checkout comparison** downloads both result artifacts and publishes a
-   Buildkite annotation with clone time, working-tree materialization time,
-   local object storage, speedup, and projected savings across 12 lanes.
+1. **EKS network clone** fetches the selected history directly from GitHub and
+   deliberately does not reference the attached mirror.
+2. **Self-hosted EKS mirror clone** checks out the identical commit with Git's
+   `--reference-if-able` object borrowing from the encrypted EFS mirror.
+3. **Checkout comparison** downloads both result artifacts and publishes clone
+   time, working-tree materialization time, local object storage, and speedup.
 
-The stopwatch covers the controlled `git clone` plus `git checkout`. Queueing,
-agent startup, and each benchmark job's identical native Buildkite checkout are
-excluded, so the two samples are directly comparable. Raw Git output and JSON
-metrics are kept as build artifacts for follow-up with a prospect.
-
-### Verified checkout results
-
-Both profiles produced the same **2.56 GiB working tree with 180,914 tracked
-files** on July 18, 2026.
-
-| Profile | History delivered | Network Git time | Mirror Git time | Speedup | Time saved | Job-local objects avoided |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| [Quick — Build #8](https://buildkite.com/buildkite-solutions/llvm-monorepo-demo/builds/8) | depth 1 / 291 MiB | 37.869s | 12.363s | 3.06× | 25.506s / 67.4% | 291 MiB |
-| [Full history — Build #9](https://buildkite.com/buildkite-solutions/llvm-monorepo-demo/builds/9) | 3.76 GiB | 3m 24.349s | 6.924s | 29.51× | 3m 17.425s / 96.6% | 3.76 GiB |
-
-In the full-history Buildkite waterfall, the complete uncached benchmark job
-took **3m 36.366s** while the mirror job took **18.438s**. Repeating the
-measured Git-time saving across the demo's 12 generated lanes represents about
-**39.49 agent-minutes** and **$0.316** of Hosted Agent usage avoided per build.
-
-The Hosted Agents cluster currently has Git mirror volumes enabled, including
-a 5 GiB `buildkite-git-mirror-pbuckley-llvm-project` volume. These volumes are
-cluster-scoped, backed by high-performance NVMe storage, and attached on a
-best-effort basis. A miss falls back safely to GitHub; successful jobs refresh
-the cache for later builds.
+Both jobs run on the same `llvm-eks-mirror` queue, EKS worker group, and job
+image. Mirror use is the controlled variable. Queueing, agent startup, native
+Buildkite checkout, and artifact transfer are excluded from the stopwatch.
+Raw Git output and JSON metrics remain available as build artifacts.
 
 ### Demo talk track
 
-- Start with **Fast + Quick** for a short, repeatable meeting demo.
-- Open the checkout annotation and emphasize that both jobs produced the same
-  commit, working-tree size, and tracked-file count.
-- Point out that the mirror checkout stores very few objects in the ephemeral
-  job because it borrows from the shared cache volume.
-- Re-run as **Fast + Full history** when the prospect wants the multi-GB cold
-  clone comparison. The cached side remains a local reference checkout.
+- Apply `infra/eks-mirror` before the meeting and run the Quick lab once to
+  warm the EKS mirror. Keep the stack running for the live comparison.
+- Start the `LLVM EKS Mirror Demo` pipeline with **Quick** for a short,
+  repeatable meeting demo.
+- Open the annotation and emphasize that both jobs used the same self-hosted
+  compute and produced the same commit, working-tree size, and file count.
+- Contrast direct network delivery with the customer-managed EKS/EFS mirror:
+  job pods remain ephemeral while Git objects persist across jobs.
+- Re-run with **Full history** when the prospect wants the multi-GB comparison.
 - Relate the per-checkout saving to the 12-way LLVM fan-out: network and disk
   savings multiply with every parallel monorepo lane.
 
@@ -113,7 +86,7 @@ the cache for later builds.
 
 | Optimization | Demo implementation | Why it matters |
 | --- | --- | --- |
-| Git mirror volume | Native Hosted Agent mirror, shared within the cluster | Avoids repeatedly transferring large Git object graphs |
+| Self-hosted Git mirror | Agent Stack on EKS with an encrypted, ReadWriteMany EFS PVC | Shows the customer-controlled persistent mirror design |
 | Shallow checkout | `checkout.depth: 2` for normal build jobs | Preserves first-parent diffing without fetching unnecessary history |
 | No submodules | `checkout.submodules: false` | Avoids work LLVM does not need for these targets |
 | Dynamic fan-out | `monorepo-diff#v1.11.0` | Avoids provisioning and checking out untouched project lanes |
@@ -147,14 +120,18 @@ Usage page remains authoritative after a run.
 - `bootstrap.yml` is copied to the Buildkite pipeline settings so the New Build
   dialog can collect the mode before an agent starts.
 - `pipeline.yml` is the repository pipeline uploaded after mode selection.
-- `checkout-lab.yml` defines the parallel uncached and mirror comparison.
+- `eks-mirror-bootstrap.yml` is the Terraform-managed pipeline definition for
+  choosing a checkout profile.
+- `checkout-lab.yml` defines the two-way EKS network and EFS mirror comparison.
 - `scripts/changed-files.sh` is the plugin's newline-delimited diff command.
 - `scripts/build-component.sh` maps each lane to a small real CMake/Ninja build.
 - `scripts/checkout-benchmark.sh` records controlled clone/checkout metrics.
 - `scripts/compare-checkouts.py` renders the annotation and savings model.
+- `../infra/eks-mirror/` provisions the dedicated Buildkite pipeline and queue,
+  EKS, EFS, External Secrets, and Agent Stack resources.
 
-The Buildkite pipeline has no webhook and the demo branch has no pull request,
-so this configuration does not propagate to upstream LLVM.
+The demo pipelines have no webhook and the demo branch has no pull request, so
+this configuration does not propagate to upstream LLVM.
 
 ## References
 
@@ -162,5 +139,7 @@ so this configuration does not propagate to upstream LLVM.
 - [Buildkite Hosted Agents](https://buildkite.com/docs/agent/buildkite-hosted)
 - [Hosted Agent cache volumes](https://buildkite.com/docs/agent/buildkite-hosted/cache-volumes)
 - [Git checkout optimization](https://buildkite.com/docs/pipelines/best-practices/git-checkout-optimization)
+- [Agent Stack for Kubernetes Git mirrors](https://buildkite.com/docs/agent/self-hosted/agent-stack-k8s/git-settings)
+- [Terraform self-hosted queue management](https://buildkite.com/docs/platform/terraform-provider/manage-clusters-and-queues)
 - [Hosted Agent pricing](https://buildkite.com/pricing/)
 - [Dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines)

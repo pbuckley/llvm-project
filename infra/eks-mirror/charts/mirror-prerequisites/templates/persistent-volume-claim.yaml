@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.mirror.persistentVolumeClaimName | quote }}
+  labels:
+    app.kubernetes.io/part-of: llvm-eks-mirror
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: {{ .Values.mirror.storageClassName | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.mirror.requestedStorage | quote }}

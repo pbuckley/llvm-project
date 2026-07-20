@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Render the prospect-facing uncached-versus-mirror checkout comparison."""
+"""Render the EKS network-versus-EFS-mirror checkout comparison."""
 
 import json
 from pathlib import Path
@@ -9,24 +9,22 @@ import sys
 
 if len(sys.argv) != 5:
     raise SystemExit(
-        "usage: compare-checkouts.py NETWORK_JSON MIRROR_JSON OUTPUT_MD OUTPUT_JSON"
+        "usage: compare-checkouts.py NETWORK_JSON EKS_MIRROR_JSON "
+        "OUTPUT_MD OUTPUT_JSON"
     )
 
 network = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-mirror = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
-if network["profile"] != mirror["profile"]:
-    raise SystemExit("checkout profiles do not match")
+eks_mirror = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+samples = (network, eks_mirror)
 
-network_ms = network["total_ms"]
-mirror_ms = mirror["total_ms"]
-saved_ms = network_ms - mirror_ms
-speedup = network_ms / mirror_ms if mirror_ms else float("inf")
-saved_percent = saved_ms / network_ms * 100 if network_ms else 0
-object_bytes_avoided = max(
-    0, network["local_object_bytes"] - mirror["local_object_bytes"]
-)
-fanout_agent_minutes_saved = saved_ms * 12 / 60_000
-fanout_cost_saved = fanout_agent_minutes_saved * 0.008
+if len({sample["profile"] for sample in samples}) != 1:
+    raise SystemExit("checkout profiles do not match")
+if len({sample["commit"] for sample in samples}) != 1:
+    raise SystemExit("checkout commits do not match")
+if len({sample["tracked_files"] for sample in samples}) != 1:
+    raise SystemExit("tracked file counts do not match")
+if not eks_mirror["mirror_used"]:
+    raise SystemExit("the EKS mirror sample did not borrow Git objects")
 
 
 def seconds(milliseconds: int) -> str:
@@ -43,54 +41,66 @@ def size(value: int) -> str:
     raise AssertionError("unreachable")
 
 
+network_ms = network["total_ms"]
+mirror_ms = eks_mirror["total_ms"]
+saved_ms = network_ms - mirror_ms
+speedup = network_ms / mirror_ms if mirror_ms else 0
+saved_percent = saved_ms / network_ms * 100 if network_ms else 0
+object_bytes_avoided = max(
+    0, network["local_object_bytes"] - eks_mirror["local_object_bytes"]
+)
+fanout_agent_minutes_saved = saved_ms * 12 / 60_000
 profile_description = (
     "depth-1 snapshot" if network["profile"] == "quick" else "full Git history"
 )
-markdown = f"""## LLVM checkout performance lab
 
-Both jobs materialized the same **{size(network['working_tree_bytes'])}** working
-tree with **{network['tracked_files']:,} tracked files**. The `{network['profile']}`
-profile compares delivery of a {profile_description} from GitHub with a checkout
-that borrows objects from Buildkite's attached **{size(mirror['mirror_bytes'])}**
-Git mirror volume.
+markdown = f"""## LLVM self-hosted EKS checkout performance lab
 
-| Strategy | Clone/fetch | Working-tree checkout | Total Git time | Local Git objects |
-| --- | ---: | ---: | ---: | ---: |
-| Network, no local cache | {seconds(network['clone_ms'])} | {seconds(network['checkout_ms'])} | **{seconds(network_ms)}** | {size(network['local_object_bytes'])} |
-| Buildkite Git mirror | {seconds(mirror['clone_ms'])} | {seconds(mirror['checkout_ms'])} | **{seconds(mirror_ms)}** | {size(mirror['local_object_bytes'])} |
+Both jobs ran on the `llvm-eks-mirror` queue and materialized commit
+`{network['commit'][:12]}` with **{network['tracked_files']:,} tracked files**.
+The `{network['profile']}` profile compares delivery of a {profile_description}
+from GitHub with a reference clone backed by the persistent EFS Git mirror.
+
+| Checkout path | Clone/fetch | Working-tree checkout | Total Git time | Job-local Git objects | Shared mirror |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Self-hosted EKS, network only | {seconds(network['clone_ms'])} | {seconds(network['checkout_ms'])} | **{seconds(network['total_ms'])}** | {size(network['local_object_bytes'])} | not used |
+| Self-hosted EKS, EFS mirror | {seconds(eks_mirror['clone_ms'])} | {seconds(eks_mirror['checkout_ms'])} | **{seconds(eks_mirror['total_ms'])}** | {size(eks_mirror['local_object_bytes'])} | {size(eks_mirror['mirror_bytes'])} |
 
 ### Prospect takeaway
 
-- **{speedup:.1f}× faster** measured Git delivery; **{seconds(saved_ms)} saved ({saved_percent:.1f}%)** per checkout.
-- **{size(object_bytes_avoided)} less job-local Git object storage** because the checkout borrows from the shared mirror.
-- Across this demo's 12-way fan-out, that is approximately **{fanout_agent_minutes_saved:.2f} agent-minutes** and **${fanout_cost_saved:.3f}** avoided per build at the current Small Linux Hosted Agent rate.
-- Buildkite manages mirror locking and uses best-effort, cluster-scoped NVMe cache volumes; a cache miss safely falls back to the remote repository.
+- **Persistent EFS mirror:** {speedup:.1f}× faster; {seconds(saved_ms)} saved ({saved_percent:.1f}%).
+- Both samples use the same Agent Stack controller, EKS worker group, job image, and queue. Mirror use is the controlled variable.
+- Buildkite manages mirror creation, updates, and file locking while the customer controls the encrypted EFS file system and PVC lifecycle.
+- The mirror avoided approximately **{size(object_bytes_avoided)}** of job-local Git objects.
+- Across this demo's 12-way fan-out, the measured result represents approximately **{fanout_agent_minutes_saved:.2f} agent-minutes** avoided per build.
 
 <details><summary>What this measures</summary>
 
-The stopwatch starts immediately before `git clone` and stops after `git
-checkout` materializes the selected commit. Queueing, agent startup, artifact
-download, and the benchmark jobs' identical native checkouts are excluded.
-The mirror sample uses Git's `--reference-if-able`, the same object-borrowing
-mechanism used by Buildkite Git mirrors.
+The stopwatch starts immediately before the controlled `git clone` and stops
+after `git checkout` materializes the selected commit. Queueing, agent startup,
+native pipeline checkout, and artifact transfer are excluded. The mirror sample
+uses Git's `--reference-if-able` object-borrowing mechanism.
 
 </details>
 """
 
-comparison = {
+result = {
     "profile": network["profile"],
-    "network_total_ms": network_ms,
-    "mirror_total_ms": mirror_ms,
-    "saved_ms": saved_ms,
-    "saved_percent": saved_percent,
-    "speedup": speedup,
-    "object_bytes_avoided": object_bytes_avoided,
+    "commit": network["commit"],
+    "network": network,
+    "eks_mirror": {
+        "sample": eks_mirror["sample"],
+        "total_ms": mirror_ms,
+        "saved_ms": saved_ms,
+        "saved_percent": saved_percent,
+        "speedup": speedup,
+        "object_bytes_avoided": object_bytes_avoided,
+    },
     "fanout_agent_minutes_saved": fanout_agent_minutes_saved,
-    "fanout_cost_saved_usd": fanout_cost_saved,
 }
 
 Path(sys.argv[3]).write_text(markdown, encoding="utf-8")
 Path(sys.argv[4]).write_text(
-    json.dumps(comparison, indent=2) + "\n", encoding="utf-8"
+    json.dumps(result, indent=2, allow_nan=False) + "\n", encoding="utf-8"
 )
 print(markdown)
