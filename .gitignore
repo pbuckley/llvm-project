@@ -68,6 +68,7 @@ AGENTS.md
 .cursor
 .cursorignore
 .cursorindexingignore
+.bk.yaml
 
 #==============================================================================#
 # Directories to ignore (do not add trailing '/'s, they skip symlinks).

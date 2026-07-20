@@ -3,6 +3,7 @@
 """Render the EKS network-versus-EFS-mirror checkout comparison."""
 
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -41,6 +42,31 @@ def size(value: int) -> str:
     raise AssertionError("unreachable")
 
 
+def bar_columns(value: int, maximum: int) -> int:
+    """Quantize a value onto Buildkite's supported 12-column CSS grid."""
+    if value <= 0 or maximum <= 0:
+        return 0
+    return max(1, min(12, math.ceil(value / maximum * 12)))
+
+
+def bar_row(label: str, value: int, maximum: int, formatted: str, color: str) -> str:
+    columns = bar_columns(value, maximum)
+    bar = (
+        f'<div class="block col-{columns} {color} py1">&nbsp;</div>'
+        if columns
+        else ""
+    )
+    return (
+        '<div class="flex items-center mb2">'
+        f'<div class="col-3 pr2 right-align bold">{label}</div>'
+        '<div class="col-7 bg-muted rounded overflow-hidden">'
+        f"{bar}"
+        "</div>"
+        f'<div class="col-2 pl2 bold">{formatted}</div>'
+        "</div>"
+    )
+
+
 network_ms = network["total_ms"]
 mirror_ms = eks_mirror["total_ms"]
 saved_ms = network_ms - mirror_ms
@@ -53,6 +79,51 @@ fanout_agent_minutes_saved = saved_ms * 12 / 60_000
 profile_description = (
     "depth-1 snapshot" if network["profile"] == "quick" else "full Git history"
 )
+runtime_max = max(network_ms, mirror_ms)
+objects_max = max(network["local_object_bytes"], eks_mirror["local_object_bytes"])
+result_color = "green" if saved_ms >= 0 else "red"
+result_background = "bg-green" if saved_ms >= 0 else "bg-red"
+saved_label = "checkout time saved" if saved_ms >= 0 else "checkout regression"
+fanout_label = "agent-minutes avoided" if saved_ms >= 0 else "extra agent-minutes"
+if saved_ms >= 0:
+    performance_takeaway = (
+        f"**Persistent EFS mirror:** {speedup:.1f}× faster; "
+        f"{seconds(saved_ms)} saved ({saved_percent:.1f}%)."
+    )
+else:
+    performance_takeaway = (
+        "**Persistent EFS mirror:** "
+        f"{seconds(abs(saved_ms))} slower ({abs(saved_percent):.1f}% longer)."
+    )
+
+runtime_chart = "".join(
+    (
+        bar_row(
+            "Network only", network_ms, runtime_max, seconds(network_ms), "bg-blue"
+        ),
+        bar_row(
+            "EFS mirror", mirror_ms, runtime_max, seconds(mirror_ms), result_background
+        ),
+    )
+)
+objects_chart = "".join(
+    (
+        bar_row(
+            "Network only",
+            network["local_object_bytes"],
+            objects_max,
+            size(network["local_object_bytes"]),
+            "bg-blue",
+        ),
+        bar_row(
+            "EFS mirror",
+            eks_mirror["local_object_bytes"],
+            objects_max,
+            size(eks_mirror["local_object_bytes"]),
+            "bg-teal",
+        ),
+    )
+)
 
 markdown = f"""## LLVM self-hosted EKS checkout performance lab
 
@@ -61,6 +132,16 @@ Both jobs ran on the `llvm-eks-mirror` queue and materialized commit
 The `{network['profile']}` profile compares delivery of a {profile_description}
 from GitHub with a reference clone backed by the persistent EFS Git mirror.
 
+<div class="flex flex-wrap mxn1 mb3"><div class="col-12 sm-col-4 px1 mb1"><div class="border rounded p2 center"><div class="h1 bold {result_color}">{speedup:.1f}×</div><div class="h6 caps muted">network-to-mirror speedup</div></div></div><div class="col-12 sm-col-4 px1 mb1"><div class="border rounded p2 center"><div class="h1 bold {result_color}">{seconds(abs(saved_ms))}</div><div class="h6 caps muted">{saved_label}</div></div></div><div class="col-12 sm-col-4 px1 mb1"><div class="border rounded p2 center"><div class="h1 bold {result_color}">{abs(fanout_agent_minutes_saved):.2f}</div><div class="h6 caps muted">{fanout_label} at 12-way fan-out</div></div></div></div>
+
+### Total Git time
+
+<div class="border rounded p3 mb3"><div class="h6 caps muted center mb2">Same scale across both checkout paths</div>{runtime_chart}</div>
+
+### Job-local Git object footprint
+
+<div class="border rounded p3 mb3"><div class="h6 caps muted center mb2">Smaller is better; shared EFS objects are excluded</div>{objects_chart}</div>
+
 | Checkout path | Clone/fetch | Working-tree checkout | Total Git time | Job-local Git objects | Shared mirror |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Self-hosted EKS, network only | {seconds(network['clone_ms'])} | {seconds(network['checkout_ms'])} | **{seconds(network['total_ms'])}** | {size(network['local_object_bytes'])} | not used |
@@ -68,11 +149,11 @@ from GitHub with a reference clone backed by the persistent EFS Git mirror.
 
 ### Prospect takeaway
 
-- **Persistent EFS mirror:** {speedup:.1f}× faster; {seconds(saved_ms)} saved ({saved_percent:.1f}%).
+- {performance_takeaway}
 - Both samples use the same Agent Stack controller, EKS worker group, job image, and queue. Mirror use is the controlled variable.
 - Buildkite manages mirror creation, updates, and file locking while the customer controls the encrypted EFS file system and PVC lifecycle.
 - The mirror avoided approximately **{size(object_bytes_avoided)}** of job-local Git objects.
-- Across this demo's 12-way fan-out, the measured result represents approximately **{fanout_agent_minutes_saved:.2f} agent-minutes** avoided per build.
+- Across this demo's 12-way fan-out, the measured result represents approximately **{abs(fanout_agent_minutes_saved):.2f} {fanout_label}** per build.
 
 <details><summary>What this measures</summary>
 
