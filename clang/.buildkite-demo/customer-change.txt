@@ -2,3 +2,5 @@ Demo-only change marker for the Clang product pipeline.
 
 This file exists only on codex/buildkite-monorepo-demo so Fast mode has a
 repeatable, product-scoped change to route and display in the changelog.
+
+Scenario 2 validates one-checkout, artifact-only fan-out.
