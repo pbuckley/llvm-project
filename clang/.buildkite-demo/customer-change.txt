@@ -7,3 +7,4 @@ Scenario 2 validates one-checkout, artifact-only fan-out.
 Scenario 3 keeps the morning Fast run deterministic after documentation updates.
 Scenario 4 keeps artifact-link validation product-scoped and repeatable.
 Scenario 5 verifies artifacts exist before annotations link to them.
+Scenario 6 validates clean Hosted Agent checkout logs.
