@@ -175,7 +175,7 @@ steps:
                   key: "no-project-change"
                   command: |
                     echo "The diff did not touch a configured LLVM project lane."
-                    echo "See .buildkite/README.md for the path map and demo controls."
+                    echo "See https://github.com/buildkite-solutions/llvm-demo-collateral/blob/main/docs/PIPELINE-GUIDE.md for the path map and demo controls."
                   agents:
                     queue: "hosted-linux"
                   timeout_in_minutes: 5
