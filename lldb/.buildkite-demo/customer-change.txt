@@ -5,3 +5,4 @@ repeatable, product-scoped change to route and display in the changelog.
 
 Scenario 2 validates independent product ownership and promotion.
 Scenario 3 keeps the morning Fast run deterministic after documentation updates.
+Scenario 4 keeps artifact-link validation product-scoped and repeatable.
