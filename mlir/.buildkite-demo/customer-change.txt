@@ -4,3 +4,4 @@ This file exists only on codex/buildkite-monorepo-demo so Fast mode has a
 repeatable, product-scoped change to route and display in the changelog.
 
 Scenario 2 validates isolated retry without rebuilding the package.
+Scenario 3 keeps the morning Fast run deterministic after documentation updates.
