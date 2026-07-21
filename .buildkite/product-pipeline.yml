@@ -12,7 +12,7 @@ steps:
     agents:
       queue: "hosted-linux"
     artifact_paths:
-      - "product-release/**"
+      - "product-release/**/package/**"
       - ".buildkite/scripts/conveyor-adapter.sh"
     timeout_in_minutes: 35
 
@@ -63,6 +63,4 @@ steps:
       .buildkite/scripts/conveyor-adapter.sh promote "$${LLVM_DEMO_COMPONENT}"
     agents:
       queue: "hosted-linux"
-    artifact_paths:
-      - "product-release/**/deployment-record.json"
     timeout_in_minutes: 10

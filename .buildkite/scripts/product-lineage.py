@@ -168,6 +168,15 @@ print(markdown)
 
 if shutil_path := shutil.which("buildkite-agent"):
     subprocess.run(
+        [
+            shutil_path,
+            "artifact",
+            "upload",
+            f"{manifest_path};{markdown_path}",
+        ],
+        check=True,
+    )
+    subprocess.run(
         [shutil_path, "annotate", "--style", "info", "--context", f"lineage-{component}"],
         input=markdown,
         text=True,

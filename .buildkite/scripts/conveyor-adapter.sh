@@ -91,6 +91,7 @@ JSON
 JSON
     echo "+++ :rocket: Promoted the same ${component} material at ${commit:0:12}"
     if command -v buildkite-agent >/dev/null 2>&1; then
+      buildkite-agent artifact upload "${release_root}/deployment-record.json"
       buildkite-agent annotate --style success --context "promotion-${component}" <<MARKDOWN
 ## ${component}: where is my stuff?
 
