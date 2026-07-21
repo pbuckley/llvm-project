@@ -2,10 +2,6 @@ env:
   LLVM_DEMO_CHECKOUT_PROFILE: "${LLVM_DEMO_CHECKOUT_PROFILE}"
   LLVM_DEMO_REPO_URL: "https://github.com/pbuckley/llvm-project.git"
 
-checkout:
-  depth: 2
-  submodules: false
-
 steps:
   - group: ":git: Self-hosted EKS checkout lab — ${LLVM_DEMO_CHECKOUT_PROFILE}"
     key: "checkout-performance-lab"

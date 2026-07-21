@@ -94,10 +94,11 @@ These are representative build targets, not exhaustive release builds. That
 keeps the demo useful on ephemeral agents while still performing real C/C++
 configuration and compilation.
 
-Normal build jobs use Buildkite's native two-commit shallow checkout so
-discovery can compute the first-parent diff. The Hosted Agent also attaches its
-managed Git mirror, so the shallow working checkout can borrow existing objects
-instead of transferring them again.
+Normal Hosted Agent jobs leave clone, fetch, and submodule behavior at the
+agent's managed defaults. This avoids ineffective pipeline overrides of
+protected checkout settings. The diff resolver fetches its exact base commit if
+it is absent, while the Hosted Agent's managed Git mirror still avoids repeated
+network transfer when the mirror is warm.
 
 ## Checkout performance lab
 
@@ -152,8 +153,7 @@ and [EKS Build #5](https://buildkite.com/buildkite-solutions/llvm-eks-mirror-dem
 | Optimization | Demo implementation | Why it matters |
 | --- | --- | --- |
 | Self-hosted Git mirror | Agent Stack on EKS with an encrypted, ReadWriteMany EFS PVC | Shows the customer-controlled persistent mirror design |
-| Shallow checkout | `checkout.depth: 2` for normal build jobs | Preserves first-parent diffing without fetching unnecessary history |
-| No submodules | `checkout.submodules: false` | Avoids work LLVM does not need for these targets |
+| Hosted checkout defaults | No pipeline override of protected Git settings | Keeps checkout policy with the agent and removes ignored-variable warnings |
 | Dynamic fan-out | `monorepo-diff#v1.11.0` | Avoids provisioning and checking out untouched project lanes |
 
 For production extensions, Buildkite also supports native sparse checkout for

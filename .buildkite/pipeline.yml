@@ -1,10 +1,6 @@
 env:
   LLVM_DEMO_MODE: "${LLVM_DEMO_MODE}"
 
-checkout:
-  depth: 2
-  submodules: false
-
 steps:
   - label: ":mag: Discover affected LLVM projects"
     key: "monorepo-diff"
