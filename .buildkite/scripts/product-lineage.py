@@ -158,9 +158,10 @@ markdown = f"""## {component} product release lineage
 | --- | --- |
 {file_rows}
 
-The JSON release manifest is uploaded as an immutable artifact. Downstream
-Terraform slices and promotion consume the packaged material without cloning
-the monorepo again.
+The <a href="artifact://{manifest_path.as_posix()}">JSON release manifest</a>
+and <a href="artifact://{markdown_path.as_posix()}">Markdown release manifest</a>
+are uploaded as immutable artifacts. Downstream Terraform slices and promotion
+consume the packaged material without cloning the monorepo again.
 """
 markdown_path.write_text(markdown, encoding="utf-8")
 print(markdown)

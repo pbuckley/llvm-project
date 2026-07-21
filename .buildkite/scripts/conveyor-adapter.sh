@@ -100,7 +100,20 @@ the monorepo in any downstream job.
 
 - Product build: ${BUILDKITE_BUILD_URL:-local}
 - Monorepo orchestrator: ${LLVM_DEMO_PARENT_BUILD_URL:-direct-build}
-- Traceable records: release manifest, package checksum, five plans, deployment record
+
+### Traceable records
+
+- <a href="artifact://${release_root}/release-manifest.json">Release manifest (JSON)</a>
+  and <a href="artifact://${release_root}/release-manifest.md">release manifest (Markdown)</a>
+- <a href="artifact://${package_root}/SHA256SUMS">Package checksum</a>
+  and <a href="artifact://${package_root}/${component}-${commit:0:12}.tar.gz">immutable package archive</a>
+- Terraform plans:
+  <a href="artifact://${release_root}/plans/plan-slice-0.json">1/5</a>,
+  <a href="artifact://${release_root}/plans/plan-slice-1.json">2/5</a>,
+  <a href="artifact://${release_root}/plans/plan-slice-2.json">3/5</a>,
+  <a href="artifact://${release_root}/plans/plan-slice-3.json">4/5</a>,
+  <a href="artifact://${release_root}/plans/plan-slice-4.json">5/5</a>
+- <a href="artifact://${release_root}/deployment-record.json">Deployment record</a>
 MARKDOWN
     fi
     ;;
