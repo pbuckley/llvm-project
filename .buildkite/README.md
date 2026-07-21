@@ -167,8 +167,9 @@ Usage page remains authoritative after a run.
 - `pipeline.yml` is the repository pipeline uploaded after mode selection.
 - `product-orchestrator.yml` routes folders to independent product pipelines.
 - `product-pipeline.yml` carries one product through lineage, test, package,
-  isolated Terraform slices, and promotion.
-- `product-bootstrap.yml` is the shared child-pipeline upload step.
+  isolated Terraform slices, and promotion. Each product checks out source once;
+  the five plan slices and promotion consume immutable artifacts without another
+  repository checkout.
 - `eks-mirror-bootstrap.yml` is the Terraform-managed pipeline definition for
   choosing a checkout profile.
 - `checkout-lab.yml` defines the two-way EKS network and EFS mirror comparison.

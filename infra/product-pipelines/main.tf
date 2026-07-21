@@ -62,7 +62,7 @@ resource "buildkite_pipeline" "product" {
   default_branch  = var.buildkite_pipeline_default_branch
   cluster_id      = var.buildkite_hosted_cluster_graphql_id
   default_team_id = var.buildkite_default_team_graphql_id
-  steps           = file("${path.module}/../../.buildkite/product-bootstrap.yml")
+  steps           = file("${path.module}/../../.buildkite/product-pipeline.yml")
   tags            = ["llvm-demo", "monorepo-product"]
 
   provider_settings = {
