@@ -1,0 +1,86 @@
+env:
+  LLVM_DEMO_COMPONENT: "${LLVM_DEMO_COMPONENT}"
+  LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+  LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE:-off}"
+  LLVM_DEMO_PARENT_BUILD_URL: "${LLVM_DEMO_PARENT_BUILD_URL:-}"
+
+checkout:
+  depth: 2
+  submodules: false
+
+steps:
+  - label: ":mag_right: ${LLVM_DEMO_COMPONENT} changelog and release lineage"
+    key: "product-lineage"
+    command: "python3 .buildkite/scripts/product-lineage.py $${LLVM_DEMO_COMPONENT}"
+    agents:
+      queue: "hosted-linux"
+    artifact_paths:
+      - "product-release/${LLVM_DEMO_COMPONENT}/release-manifest.*"
+    timeout_in_minutes: 10
+
+  - label: ":conveyor_belt: conveyor test + package ${LLVM_DEMO_COMPONENT}"
+    key: "conveyor-package"
+    depends_on: "product-lineage"
+    command: |
+      buildkite-agent artifact download \
+        "product-release/$${LLVM_DEMO_COMPONENT}/release-manifest.json" . \
+        --step product-lineage
+      .buildkite/scripts/conveyor-adapter.sh test "$${LLVM_DEMO_COMPONENT}"
+      .buildkite/scripts/conveyor-adapter.sh package "$${LLVM_DEMO_COMPONENT}"
+    agents:
+      queue: "hosted-linux"
+    artifact_paths:
+      - "product-release/${LLVM_DEMO_COMPONENT}/package/**"
+      - ".buildkite/scripts/conveyor-adapter.sh"
+    timeout_in_minutes: 35
+
+  - group: ":terraform: ${LLVM_DEMO_COMPONENT} Terraform plan — 5 isolated slices"
+    key: "terraform-plan-group"
+    steps:
+      - label: ":terraform: plan ${LLVM_DEMO_COMPONENT} %n/5 — artifact only"
+        key: "terraform-plan-slices"
+        depends_on: "conveyor-package"
+        parallelism: 5
+        env:
+          BUILDKITE_SKIP_CHECKOUT: "true"
+        command: |
+          mkdir -p .buildkite/scripts
+          buildkite-agent artifact download ".buildkite/scripts/conveyor-adapter.sh" . \
+            --step conveyor-package
+          buildkite-agent artifact download \
+            "product-release/$${LLVM_DEMO_COMPONENT}/package/**" . \
+            --step conveyor-package
+          chmod +x .buildkite/scripts/conveyor-adapter.sh
+          .buildkite/scripts/conveyor-adapter.sh terraform-plan "$${LLVM_DEMO_COMPONENT}"
+        agents:
+          queue: "hosted-linux"
+        artifact_paths:
+          - "product-release/${LLVM_DEMO_COMPONENT}/plans/**"
+        retry:
+          automatic:
+            - exit_status: 42
+              limit: 1
+        timeout_in_minutes: 10
+
+  - label: ":rocket: Promote ${LLVM_DEMO_COMPONENT} — same material, no rebuild"
+    key: "promote-product"
+    depends_on: "terraform-plan-slices"
+    env:
+      BUILDKITE_SKIP_CHECKOUT: "true"
+    command: |
+      mkdir -p .buildkite/scripts
+      buildkite-agent artifact download ".buildkite/scripts/conveyor-adapter.sh" . \
+        --step conveyor-package
+      buildkite-agent artifact download \
+        "product-release/$${LLVM_DEMO_COMPONENT}/package/**" . \
+        --step conveyor-package
+      buildkite-agent artifact download \
+        "product-release/$${LLVM_DEMO_COMPONENT}/plans/**" . \
+        --step terraform-plan-slices
+      chmod +x .buildkite/scripts/conveyor-adapter.sh
+      .buildkite/scripts/conveyor-adapter.sh promote "$${LLVM_DEMO_COMPONENT}"
+    agents:
+      queue: "hosted-linux"
+    artifact_paths:
+      - "product-release/${LLVM_DEMO_COMPONENT}/deployment-record.json"
+    timeout_in_minutes: 10

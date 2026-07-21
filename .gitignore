@@ -69,6 +69,8 @@ AGENTS.md
 .cursorignore
 .cursorindexingignore
 .bk.yaml
+/product-release/
+/build/demo/
 
 #==============================================================================#
 # Directories to ignore (do not add trailing '/'s, they skip symlinks).

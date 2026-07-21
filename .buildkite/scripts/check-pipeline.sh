@@ -11,12 +11,20 @@ for script in .buildkite/scripts/*.py; do
 done
 
 if command -v buildkite-agent >/dev/null 2>&1; then
+  buildkite-agent pipeline upload --dry-run .buildkite/bootstrap.yml >/dev/null
   buildkite-agent pipeline upload --dry-run .buildkite/pipeline.yml >/dev/null
+  buildkite-agent pipeline upload --dry-run .buildkite/product-orchestrator.yml >/dev/null
+  buildkite-agent pipeline upload --dry-run .buildkite/product-pipeline.yml >/dev/null
+  buildkite-agent pipeline upload --dry-run .buildkite/product-bootstrap.yml >/dev/null
   buildkite-agent pipeline upload --dry-run .buildkite/checkout-lab.yml >/dev/null
   buildkite-agent pipeline upload --dry-run .buildkite/eks-mirror-bootstrap.yml >/dev/null
 elif command -v bk >/dev/null 2>&1; then
   bk pipeline validate \
+    --file .buildkite/bootstrap.yml \
     --file .buildkite/pipeline.yml \
+    --file .buildkite/product-orchestrator.yml \
+    --file .buildkite/product-pipeline.yml \
+    --file .buildkite/product-bootstrap.yml \
     --file .buildkite/checkout-lab.yml \
     --file .buildkite/eks-mirror-bootstrap.yml
 else

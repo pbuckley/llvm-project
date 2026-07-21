@@ -31,22 +31,12 @@ PATHS
   exit 0
 fi
 
-if [[ "${BUILDKITE_PULL_REQUEST:-false}" != "false" ]]; then
-  base_branch="${BUILDKITE_PULL_REQUEST_BASE_BRANCH:-main}"
-  echo "Diffing pull request against origin/${base_branch}." >&2
-  git fetch --quiet --no-tags origin "${base_branch}"
-  git diff --name-only "FETCH_HEAD...HEAD"
-  exit 0
-fi
+base_commit="$(.buildkite/scripts/resolve-base-commit.sh)"
+head_commit="$(git rev-parse HEAD)"
 
-if ! git rev-parse --verify --quiet HEAD^ >/dev/null; then
-  branch="${BUILDKITE_BRANCH:-main}"
-  git fetch --quiet --no-tags --deepen=2 origin "${branch}" || true
-fi
-
-if git rev-parse --verify --quiet HEAD^ >/dev/null; then
-  echo "Fast mode selected: diffing the current commit against its first parent." >&2
-  git diff --name-only HEAD^ HEAD
+if [[ "${base_commit}" != "${head_commit}" ]]; then
+  echo "Fast mode selected: diffing ${base_commit:0:12}..${head_commit:0:12}." >&2
+  git diff --name-only "${base_commit}" "${head_commit}"
 else
   echo "No parent commit is available; treating every tracked path as changed." >&2
   git ls-tree -r --name-only HEAD

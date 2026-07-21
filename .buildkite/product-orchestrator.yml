@@ -1,0 +1,244 @@
+env:
+  LLVM_DEMO_MODE: "${LLVM_DEMO_MODE}"
+  LLVM_DEMO_TOPOLOGY: "product-pipelines"
+  LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+  LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+
+checkout:
+  depth: 2
+  submodules: false
+
+steps:
+  - label: ":mag: Discover affected products and route their pipelines"
+    key: "product-monorepo-diff"
+    command: ".buildkite/scripts/annotate-plan.sh"
+    agents:
+      queue: "hosted-linux"
+    timeout_in_minutes: 10
+    plugins:
+      - monorepo-diff#v1.11.0:
+          diff: ".buildkite/scripts/changed-files.sh"
+          watch:
+            - path:
+                - "llvm/**"
+              skip_path:
+                - "llvm/docs/**"
+              config:
+                label: ":gear: LLVM core product pipeline"
+                key: "trigger-product-llvm"
+                trigger: "llvm-product-llvm-core"
+                async: false
+                build:
+                  message: ":gear: LLVM core from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "llvm"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "clang/**"
+                - "clang-tools-extra/**"
+              skip_path:
+                - "clang/docs/**"
+                - "clang-tools-extra/docs/**"
+              config:
+                label: ":hammer: Clang product pipeline"
+                key: "trigger-product-clang"
+                trigger: "llvm-product-clang"
+                async: false
+                build:
+                  message: ":hammer: Clang from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "clang"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "lld/**"
+              skip_path:
+                - "lld/docs/**"
+              config:
+                label: ":link: LLD product pipeline"
+                key: "trigger-product-lld"
+                trigger: "llvm-product-lld"
+                async: false
+                build:
+                  message: ":link: LLD from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "lld"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "libcxx/**"
+                - "libcxxabi/**"
+                - "libunwind/**"
+                - "runtimes/**"
+              skip_path:
+                - "libcxx/docs/**"
+              config:
+                label: ":runner: C++ runtimes product pipeline"
+                key: "trigger-product-runtimes"
+                trigger: "llvm-product-cpp-runtimes"
+                async: false
+                build:
+                  message: ":runner: C++ runtimes from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "runtimes"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "mlir/**"
+              skip_path:
+                - "mlir/docs/**"
+              config:
+                label: ":building_construction: MLIR product pipeline"
+                key: "trigger-product-mlir"
+                trigger: "llvm-product-mlir"
+                async: false
+                build:
+                  message: ":building_construction: MLIR from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "mlir"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "flang/**"
+              skip_path:
+                - "flang/docs/**"
+              config:
+                label: ":capital_abcd: Flang product pipeline"
+                key: "trigger-product-flang"
+                trigger: "llvm-product-flang"
+                async: false
+                build:
+                  message: ":capital_abcd: Flang from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "flang"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "lldb/**"
+              skip_path:
+                - "lldb/docs/**"
+              config:
+                label: ":lady_beetle: LLDB product pipeline"
+                key: "trigger-product-lldb"
+                trigger: "llvm-product-lldb"
+                async: false
+                build:
+                  message: ":lady_beetle: LLDB from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "lldb"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "compiler-rt/**"
+              config:
+                label: ":medical_symbol: compiler-rt product pipeline"
+                key: "trigger-product-compiler-rt"
+                trigger: "llvm-product-compiler-rt"
+                async: false
+                build:
+                  message: ":medical_symbol: compiler-rt from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "compiler-rt"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "openmp/**"
+                - "offload/**"
+              skip_path:
+                - "openmp/docs/**"
+              config:
+                label: ":thread: OpenMP product pipeline"
+                key: "trigger-product-openmp"
+                trigger: "llvm-product-openmp"
+                async: false
+                build:
+                  message: ":thread: OpenMP from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "openmp"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "bolt/**"
+              skip_path:
+                - "bolt/docs/**"
+              config:
+                label: ":zap: BOLT product pipeline"
+                key: "trigger-product-bolt"
+                trigger: "llvm-product-bolt"
+                async: false
+                build:
+                  message: ":zap: BOLT from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "bolt"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - path:
+                - "polly/**"
+              skip_path:
+                - "polly/docs/**"
+              config:
+                label: ":parrot: Polly product pipeline"
+                key: "trigger-product-polly"
+                trigger: "llvm-product-polly"
+                async: false
+                build:
+                  message: ":parrot: Polly from ${BUILDKITE_MESSAGE}"
+                  commit: "${BUILDKITE_COMMIT}"
+                  branch: "${BUILDKITE_BRANCH}"
+                  env:
+                    LLVM_DEMO_COMPONENT: "polly"
+                    LLVM_DEMO_BASE_COMMIT: "${LLVM_DEMO_BASE_COMMIT}"
+                    LLVM_DEMO_FAILURE_MODE: "${LLVM_DEMO_FAILURE_MODE}"
+                    LLVM_DEMO_PARENT_BUILD_URL: "${BUILDKITE_BUILD_URL}"
+
+            - default:
+                config:
+                  label: ":white_check_mark: No deployable product changed"
+                  key: "no-product-change"
+                  command: |
+                    echo "The diff did not touch a configured product pipeline."
+                    echo "The parent annotation contains the evaluated path set."
+                  agents:
+                    queue: "hosted-linux"
+                  timeout_in_minutes: 5

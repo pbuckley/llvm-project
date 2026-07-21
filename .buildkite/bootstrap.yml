@@ -17,11 +17,34 @@ steps:
             value: "fast"
           - label: "Full — all project lanes"
             value: "full"
+      - select: "Pipeline topology"
+        key: "llvm-demo-topology"
+        default: "product-pipelines"
+        options:
+          - label: "Independent product pipelines — customer mirror (default)"
+            value: "product-pipelines"
+          - label: "Build lanes in one pipeline — compact speed view"
+            value: "build-lanes"
+      - select: "Failure recovery"
+        key: "llvm-demo-failure-mode"
+        default: "off"
+        options:
+          - label: "Off — all work passes (default)"
+            value: "off"
+          - label: "MLIR Terraform slice fails once, then retries in isolation"
+            value: "mlir-once"
   - label: ":pipeline: Upload the repository pipeline"
     key: "upload-repository-pipeline"
     command: |
       export LLVM_DEMO_MODE="$$(buildkite-agent meta-data get llvm-demo-mode --default fast)"
-      buildkite-agent pipeline upload .buildkite/pipeline.yml
+      export LLVM_DEMO_TOPOLOGY="$$(buildkite-agent meta-data get llvm-demo-topology --default product-pipelines)"
+      export LLVM_DEMO_FAILURE_MODE="$$(buildkite-agent meta-data get llvm-demo-failure-mode --default off)"
+      export LLVM_DEMO_BASE_COMMIT="$$(.buildkite/scripts/resolve-base-commit.sh)"
+      if [[ "$${LLVM_DEMO_TOPOLOGY}" == "product-pipelines" ]]; then
+        buildkite-agent pipeline upload .buildkite/product-orchestrator.yml
+      else
+        buildkite-agent pipeline upload .buildkite/pipeline.yml
+      fi
     agents:
       queue: "hosted-linux"
     timeout_in_minutes: 10

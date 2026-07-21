@@ -1,0 +1,11 @@
+checkout:
+  depth: 2
+  submodules: false
+
+steps:
+  - label: ":pipeline: Upload this product's release pipeline"
+    key: "upload-product-pipeline"
+    command: "buildkite-agent pipeline upload .buildkite/product-pipeline.yml"
+    agents:
+      queue: "hosted-linux"
+    timeout_in_minutes: 10
