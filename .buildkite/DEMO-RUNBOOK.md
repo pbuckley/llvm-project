@@ -5,6 +5,7 @@
 - Keep `codex/buildkite-monorepo-demo` selected in all New Build forms.
 - Confirm the `LLVM EKS Mirror Demo` queue is active before the meeting.
 - Keep these known-good results open as fallbacks:
+  - [Product routing, lineage, artifact fan-out, and isolated retry](https://buildkite.com/buildkite-solutions/llvm-monorepo-demo/builds/13)
   - [12-way LLVM fan-out, 4m50s](https://buildkite.com/buildkite-solutions/llvm-monorepo-demo/builds/6)
   - [EKS full-history mirror comparison](https://buildkite.com/buildkite-solutions/llvm-eks-mirror-demo/builds/4)
   - [EKS quick mirror comparison](https://buildkite.com/buildkite-solutions/llvm-eks-mirror-demo/builds/5)
@@ -23,7 +24,9 @@
    file, immutable manifest, parent orchestrator link, and product history.
 4. Follow the material through `conveyor test`, package, five Terraform slices,
    and promotion. Emphasize that the Terraform and promotion jobs explicitly
-   skip Git checkout and consume artifacts.
+   skip Git checkout and consume artifacts. Be explicit that the checked-in
+   adapter preserves the customer's command boundary but uses a real LLVM
+   target as the demo substitute because their Conveyor binary is unavailable.
 5. Run the same Fast scenario with **MLIR fails once**. In MLIR, expose retried
    jobs and show only Terraform slice 4/5 retrying; no upstream rebuild occurs.
 6. Use Build #6 for the optional scale reveal: 12 naturally parallel LLVM lanes
@@ -49,3 +52,5 @@
   existing customer mirror will produce the same speedup.
 - Eleven product pipelines are a faithful pattern for their roughly 40
   products, not a claim that the demo has the same source size or workload mix.
+- The Terraform plan files and promotion record demonstrate orchestration and
+  lineage; they do not deploy customer infrastructure.

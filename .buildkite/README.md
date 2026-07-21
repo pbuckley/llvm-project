@@ -41,8 +41,10 @@ Every product pipeline then demonstrates the incremental migration path:
 
 1. A product-scoped annotation shows the commits and files entering that
    product's release and uploads an immutable JSON release manifest.
-2. `conveyor test PRODUCT` and `conveyor package PRODUCT` retain the existing
-   shell-command contract while Buildkite supplies orchestration and UI.
+2. A Conveyor-compatible adapter retains the existing `conveyor test PRODUCT`
+   and package command boundary while Buildkite supplies orchestration and UI.
+   Because the customer's Conveyor binary is not available, this demo delegates
+   to a representative real LLVM target and creates a demo package artifact.
 3. Five Terraform plan slices consume the package artifact with
    `BUILDKITE_SKIP_CHECKOUT=true`; none of those ephemeral jobs clones LLVM.
 4. Promotion consumes the same package and plans, verifies the commit, and
@@ -51,6 +53,24 @@ Every product pipeline then demonstrates the incremental migration path:
 The optional `mlir-once` scenario fails one plan slice with exit status 42 on
 its first attempt. Its retry succeeds by observing `BUILDKITE_RETRY_COUNT`; the
 other four slices and every upstream artifact remain untouched.
+
+### Verified one-checkout product workflow
+
+The first routed run deliberately exposed the repeated-checkout pattern common
+to script-runner migrations. The optimized run combined lineage, build, and
+package into one source job per product; all later work downloaded artifacts
+with repository checkout disabled.
+
+| Workflow | Source checkouts per product | Overall | Clang | MLIR | LLDB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Before optimization | 3 | 11m 05s | 6m 02s | 10m 21s | 1m 53s |
+| One checkout + artifacts | 1 | 2m 39s | 1m 35s | 1m 56s | 1m 09s |
+
+The optimized workflow is [Build #13](https://buildkite.com/buildkite-solutions/llvm-monorepo-demo/builds/13);
+its MLIR child also includes the successful isolated retry. The comparison is
+an observed end-to-end demo result, not a controlled clone benchmark: queueing,
+cache warmth, and target runtime can vary. The EKS checkout lab above is the
+controlled source-delivery measurement.
 
 ## Path map and representative targets
 
